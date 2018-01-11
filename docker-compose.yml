@@ -1,0 +1,41 @@
+version: "3.4"
+services:
+  wordpress:
+    image: wordpress:4-php7.1-fpm-alpine
+    ports:
+      - 9000:9000
+    volumes:
+      - ./wordpress:/var/www/html
+    environment:
+      - WORDPRESS_DB_HOST=db:3306
+      - WORDPRESS_DB_USER=user
+      - WORDPRESS_DB_PASSWORD=example
+      - WORDPRESS_DB_NAME=wordpress
+    networks:
+      - wordpress
+      - nginx
+  # database service
+  db:
+    image: mariadb:latest
+    environment:
+      - MYSQL_ROOT_PASSWORD=supersecurepassword
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=example
+      - MYSQL_DATABASE=wordpress
+    networks:
+      - wordpress
+
+  # nginx service
+  nginx:
+    image: nginx:latest
+    ports:
+      - 80:80
+    volumes:
+      - ./nginx:/etc/nginx/conf.d/
+      - ./wordpress:/var/www/html
+    networks:
+      - nginx
+
+networks:
+  wordpress:
+  nginx:

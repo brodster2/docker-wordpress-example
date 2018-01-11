@@ -1,0 +1,78 @@
+version: "3.4"
+services:
+  wordpress:
+    image: wordpress:4-php7.1-fpm-alpine
+    ports:
+      - 9000:9000
+    volumes:
+      - wordpress:/var/www/html
+    environment:
+      - WORDPRESS_DB_USER=wp
+      - WORDPRESS_DB_NAME=wp
+      - WORDPRESS_DB_PASSWORD_FILE=/run/secrets/wp_db_password
+      - WORDPRESS_DB_HOST=mariadb
+    networks:
+      - wordpress
+      - nginx
+    deploy:
+      placement:
+          constraints: [node.role == worker]
+      replicas: 1
+      update_config:
+        parallelism: 2
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+
+  mariadb:
+    image: mariadb
+    volumes:
+      - mariadb_vol:/var/lib/mysql
+    secrets:
+      - wp_db_password
+      - root_db_password
+    environment:
+      - MYSQL_USER=wp
+      - MYSQL_DATABASE=wp
+      - MYSQL_PASSWORD_FILE=/run/secrets/wp_db_password
+      - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/root_db_password
+    networks:
+      - wordpress
+    deploy:
+      placement:
+          constraints: [node.role == manager]
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - 80:80
+    volumes:
+      - wordpress:/var/www/html
+    secrets:
+      - source: nginx_config
+        target: /etc/nginx/conf.d/nginx.conf
+    networks:
+      - nginx
+
+secrets:
+  wp_db_password:
+    external: true
+  root_db_password:
+    external: true
+  nginx_config:
+    external: true
+
+volumes:
+  wordpress:
+    driver: "local"
+  mariadb_vol:
+    driver: "local"
+
+networks:
+  wordpress:
+    driver: "overlay"
+  nginx:
+    driver: "overlay"
