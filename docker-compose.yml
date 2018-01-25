@@ -17,6 +17,8 @@ services:
   # database service
   db:
     image: mariadb:latest
+    ports:
+      - 3307:3306
     environment:
       - MYSQL_ROOT_PASSWORD=supersecurepassword
       - MYSQL_USER=user
